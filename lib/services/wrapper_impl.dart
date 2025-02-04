@@ -6,6 +6,7 @@ import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/helper/object_box.dart';
 import 'package:unipi_orario/objectbox.g.dart';
 import 'package:unipi_orario/services/internal_api.dart';
+import 'package:unipi_orario/services/widget_handler.dart';
 import 'package:unipi_orario_wrapper/unipi_orario_wrapper.dart' as w;
 
 final wrapper = w.WrapperService();
@@ -124,6 +125,7 @@ Future<void> cacheLessons() async {
   var box = objectBox.lessonBox;
   await box.removeAllAsync();
   await box.putManyAsync(lessons);
+  updateHomeWidget();
 
   cachedBeingCalled = false;
 }
@@ -160,5 +162,5 @@ Future<List<Lesson>> getLessons() async {
   );
 
   debugPrint("got lessons from api ${lessons.length}");
-  return [for (var lesson in lessons) Lesson.fromJson(lesson)];
+  return [for (var lesson in lessons) Lesson.fromJsonData(lesson)];
 }

@@ -9,6 +9,7 @@ import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/helper/object_box.dart';
 import 'package:unipi_orario/services/internal_api.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
+import 'package:unipi_orario/services/widget_handler.dart';
 import 'package:unipi_orario/services/wrapper_impl.dart';
 import 'package:unipi_orario/ui/components/home/event.dart';
 import 'package:unipi_orario/utils/globals.dart' as globals;
@@ -457,6 +458,7 @@ class _HomePageState extends State<HomePage> {
                       } else {
                         internalAPI.addFilteringCourse(data[index]);
                       }
+                      updateHomeWidget();
                       setState(() {});
                     },
                     visualDensity: VisualDensity.compact,
