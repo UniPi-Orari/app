@@ -5,6 +5,16 @@ plugins {
     id "dev.flutter.flutter-gradle-plugin"
 }
 
+dependencies {
+    implementation 'androidx.glance:glance-appwidget:1.1.1'
+
+    debugImplementation 'androidx.compose.ui:ui-tooling-preview-android:1.7.7'
+    debugImplementation 'androidx.compose.ui:ui-tooling:1.7.7'
+    debugImplementation 'androidx.glance:glance-preview:1.1.1'
+    debugImplementation 'androidx.glance:glance-appwidget-preview:1.1.1'
+
+}
+
 def localProperties = new Properties()
 def localPropertiesFile = rootProject.file("local.properties")
 if (localPropertiesFile.exists()) {
@@ -32,11 +42,24 @@ if (keystorePropertiesFile.exists()) {
 android {
     namespace = "it.unipiorario.app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = "25.1.8937393"
+    ndkVersion = "27.0.12077973"
+
 
     compileOptions {
-        sourceCompatibility = JavaVersion.VERSION_1_8
-        targetCompatibility = JavaVersion.VERSION_1_8
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
+
+    kotlin {
+        jvmToolchain(21)
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
+
+    buildFeatures {
+        compose true
     }
 
     defaultConfig {
@@ -44,7 +67,7 @@ android {
         applicationId = "it.unipiorario.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
-        minSdk = flutter.minSdkVersion
+        minSdk = 26
         targetSdk = flutter.targetSdkVersion
         versionCode = flutterVersionCode.toInteger()
         versionName = flutterVersionName

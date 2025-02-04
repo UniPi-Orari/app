@@ -12,6 +12,7 @@ final InternalAPI internalAPI = Get.find<InternalAPI>();
 final ObjectBox objectBox = Get.find<ObjectBox>();
 
 const String widgetSharedPrefsKey = "lessonWidget";
+const String widgetAndroidName = "glance.HomeWidgetReceiver";
 
 void saveLessonsToHomeWidget() {
   List<Lesson> lessons = objectBox.lessonBox
@@ -44,4 +45,7 @@ void saveLessonsToHomeWidget() {
 
 void updateHomeWidget() {
   saveLessonsToHomeWidget();
+  HomeWidget.updateWidget(
+    androidName: widgetAndroidName,
+  );
 }
