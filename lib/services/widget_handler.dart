@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -13,6 +14,8 @@ final ObjectBox objectBox = Get.find<ObjectBox>();
 
 const String widgetSharedPrefsKey = "lessonWidget";
 const String widgetAndroidName = "glance.HomeWidgetReceiver";
+const String widgetIosName = "HomeWidget";
+bool serverRunning = false;
 
 void saveLessonsToHomeWidget() {
   List<Lesson> lessons = objectBox.lessonBox
@@ -35,17 +38,43 @@ void saveLessonsToHomeWidget() {
       lessonsDict[key]!.add(lesson);
     }
 
-    debugPrint(lessonsDict.toString());
-    HomeWidget.saveWidgetData(widgetSharedPrefsKey, jsonEncode(lessonsDict));
+    var lessonJson = jsonEncode(lessonsDict);
+    if (Platform.isAndroid) HomeWidget.saveWidgetData(widgetSharedPrefsKey, lessonJson);
+    if (Platform.isIOS) setUpWebServer(lessonJson);
+
     debugPrint("Saved widget data");
   } catch (e) {
     debugPrint("Error saving widget data: $e");
   }
 }
 
-void updateHomeWidget() {
+void setUpWebServer(String jsonData) async {
+  if (serverRunning) return;
+
+  serverRunning = true;
+  var server = await HttpServer.bind(InternetAddress.loopbackIPv4, 11341);
+  debugPrint("Server running on ${server.address}:${server.port}");
+  server.listen((HttpRequest request) {
+    debugPrint("Request received");
+    request.response.headers.contentType = ContentType.json;
+    request.response.write(jsonData);
+    request.response.close();
+
+    server.close();
+    debugPrint("Server closed");
+
+    serverRunning = false;
+  });
+}
+
+void updateHomeWidget() async {
+  var widgetList = await HomeWidget.getInstalledWidgets();
+  if (widgetList.isEmpty) return;
+  debugPrint(widgetList.toString());
+
   saveLessonsToHomeWidget();
   HomeWidget.updateWidget(
     androidName: widgetAndroidName,
+    iOSName: widgetIosName,
   );
 }
