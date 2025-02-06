@@ -27,14 +27,13 @@ It is designed to be simple and easy to use, with a clean and modern interface, 
 - ✅ Works on iOS and Android
 - 📅 Daily view
 - ❓ Filter by course
+- 📲 Native widget support
 - 🧠 Efficiently caches/retrieves results in internal db                   
 - 🎨 Material You design (dynamic colors, themed icon on A12+)
 - 🌐 Multi-language support
 
 # TODOs
-- Workflows for building and releasing
 - Crowdin integration
-- Native widgets to use in homescreen
 - Editing timetable, customizing events (e.g. posticipate a lesson)
 - Export events on calendar
 - You tell me :\)
