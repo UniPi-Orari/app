@@ -20,7 +20,7 @@ bool serverRunning = false;
 void saveLessonsToHomeWidget() {
   List<Lesson> lessons = objectBox.lessonBox
       .query(
-        Lesson_.startDateTime.greaterThanDate(DateTime.now()),
+        Lesson_.startDateTime.greaterThanDate(DateTime.now().subtract(const Duration(days: 1))),
       )
       .order(
         Lesson_.startDateTime,
