@@ -155,10 +155,14 @@ Future<void> refreshCaches() async {
 
 Future<List<Lesson>> getLessons() async {
   debugPrint("getting lessons from api");
+  var now = DateTime.now();
+  var startYear = now.month >= 9 ? now.year : now.year - 1;
+  var endYear = now.month >= 7 ? now.year + 1 : now.year;
+
   var lessons = await wrapper.fetchLessons(
     calendarId: internalAPI.calendarId,
-    startDate: DateTime(2024, 9, 16),
-    endDate: DateTime(2025, 7, 1),
+    startDate: DateTime(startYear, 9, 15),
+    endDate: DateTime(endYear, 7, 1),
   );
 
   debugPrint("got lessons from api ${lessons.length}");
