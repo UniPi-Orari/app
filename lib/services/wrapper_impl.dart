@@ -130,13 +130,16 @@ Future<void> cacheLessons() async {
   cachedBeingCalled = false;
 }
 
-Future<List<String>> getAllCourses() async {
+Future<List<String>> getAllCourses({int retries = 5}) async {
+  if (retries <= 0) return [];
+
   var box = objectBox.lessonBox;
   var lessons = await box.getAllAsync();
 
   if (lessons.isEmpty) {
+    cachedBeingCalled = false;
     await cacheLessons();
-    return await getAllCourses();
+    return await getAllCourses(retries: retries - 1);
   }
 
   Set<String> courses = {};
