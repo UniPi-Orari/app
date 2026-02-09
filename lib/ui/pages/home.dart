@@ -36,11 +36,101 @@ class _HomePageState extends State<HomePage> {
   late Future<List<String>> futureWithCourses;
   bool refreshing = false;
 
+  // Caching implementation
+  final Map<String, List<Lesson>> _lessonsCache = {};
+  final Map<String, Future<List<Lesson>>> _futureCache = {};
+
   @override
   void initState() {
     super.initState();
     _pageController = PageController(initialPage: currentPageValue);
     futureWithCourses = getAllCourses();
+
+    // Pre-fetch initial pages
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _prefetchAdjacentPages(currentPageValue);
+    });
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  // Helper to normalize date (remove time component)
+  DateTime _normalizeDate(DateTime date) {
+    return DateTime(date.year, date.month, date.day);
+  }
+
+  String _getCacheKey(DateTime date) {
+    final normalized = _normalizeDate(date);
+    return '${normalized.year}-${normalized.month}-${normalized.day}';
+  }
+
+  Future<List<Lesson>> futureBuilderFuture(DateTime date) async {
+    final cacheKey = _getCacheKey(date);
+
+    // Return cached result if available
+    if (_lessonsCache.containsKey(cacheKey)) {
+      return _lessonsCache[cacheKey]!;
+    }
+
+    // Return existing future if already fetching
+    if (_futureCache.containsKey(cacheKey)) {
+      return _futureCache[cacheKey]!;
+    }
+
+    // Create and cache new future
+    final future = _fetchAndCacheLessons(date, cacheKey);
+    _futureCache[cacheKey] = future;
+
+    return future;
+  }
+
+  Future<List<Lesson>> _fetchAndCacheLessons(DateTime date, String cacheKey) async {
+    try {
+      final lessons = await getLessonsForDay(date);
+
+      // Update cache with normalized date
+      if (mounted) {
+        setState(() {
+          _lessonsCache[cacheKey] = lessons;
+        });
+      }
+
+      return lessons;
+    } catch (e) {
+      // If error occurs, remove from future cache to allow retry
+      if (mounted) {
+        setState(() {
+          _futureCache.remove(cacheKey);
+        });
+      }
+      rethrow;
+    } finally {
+      // Remove from future cache after completion
+      if (mounted && _futureCache.containsKey(cacheKey)) {
+        setState(() {
+          _futureCache.remove(cacheKey);
+        });
+      }
+    }
+  }
+
+  void _prefetchAdjacentPages(int currentPage) {
+    // Pre-fetch next and previous pages for smoother scrolling
+    for (int offset = -2; offset <= 2; offset++) {
+      if (offset == 0) continue; // Skip current page
+
+      final date = DateTime.now().add(Duration(days: (currentPage + offset) - currentPageValue));
+      final cacheKey = _getCacheKey(date);
+
+      // Only fetch if not already cached or being fetched
+      if (!_lessonsCache.containsKey(cacheKey) && !_futureCache.containsKey(cacheKey)) {
+        futureBuilderFuture(date);
+      }
+    }
   }
 
   Future<void> refreshData() async {
@@ -48,18 +138,40 @@ class _HomePageState extends State<HomePage> {
       refreshing = true;
     });
 
-    await refreshCaches();
-    futureWithCourses = getAllCourses();
+    try {
+      // Clear only the local cache, not the database
+      if (mounted) {
+        setState(() {
+          _lessonsCache.clear();
+          _futureCache.clear();
+        });
+      }
 
-    setState(() {
-      refreshing = false;
-    });
+      // This should now only make one API call
+      await refreshCaches();
+
+      // Update courses
+      futureWithCourses = getAllCourses();
+
+      // Force rebuild of current page
+      if (mounted) {
+        setState(() {});
+      }
+    } catch (e) {
+      debugPrint("Error refreshing: $e");
+    } finally {
+      if (mounted) {
+        setState(() {
+          refreshing = false;
+        });
+      }
+    }
   }
 
   Widget refreshButton() {
-    Widget changeCalendarDialog() {
-      String currentText = internalAPI.calendarId;
+    String currentText = internalAPI.calendarId;
 
+    Widget changeCalendarDialog() {
       return AlertDialog(
         title: Text(
           FlutterI18n.translate(
@@ -179,7 +291,7 @@ class _HomePageState extends State<HomePage> {
                 child: !internalAPI.isDarkMode
                     ? const Icon(
                         Icons.dark_mode,
-                        key: ValueKey('dark'), // <-- senza key nva
+                        key: ValueKey('dark'),
                       )
                     : const Icon(
                         Icons.light_mode,
@@ -234,16 +346,13 @@ class _HomePageState extends State<HomePage> {
     return EasyInfiniteDateTimeLine(
       key: timeLineKey,
       controller: _controller,
-      //
       firstDate: DateTime(DateTime.september),
       lastDate: DateTime(DateTime.now().year).add(const Duration(days: 365 * 4)),
       focusDate: currentDate,
-      //
       onDateChange: (selectedDate) {
         setState(() {
           currentDate = selectedDate;
 
-          // TODO: refactor this in a way that actually makes sense.
           int toJump = currentPageValue + currentDate.difference(DateTime.now()).inDays;
           if (currentDate.isAfter(DateTime.now())) toJump++;
           _pageController.jumpToPage(toJump);
@@ -254,11 +363,9 @@ class _HomePageState extends State<HomePage> {
       dayProps: EasyDayProps(
         todayHighlightStyle: TodayHighlightStyle.withBackground,
         todayHighlightColor: Theme.of(context).colorScheme.tertiaryContainer,
-        //
         activeDayStyle: dayStyle,
         todayStyle: dayStyle,
         inactiveDayStyle: dayStyle,
-        //
         height: 80,
       ),
       headerBuilder: (context, date) {
@@ -293,7 +400,6 @@ class _HomePageState extends State<HomePage> {
                         currentDate = DateTime.now();
                       });
 
-                      // TODO: refactor this too in a way that actually makes sense.
                       int toJump = currentPageValue + currentDate.difference(DateTime.now()).inDays;
                       if (currentDate.isAfter(DateTime.now())) toJump++;
                       _pageController.jumpToPage(toJump);
@@ -317,9 +423,13 @@ class _HomePageState extends State<HomePage> {
           DateTime date = DateTime.now().add(Duration(days: index - currentPageValue));
 
           return FutureBuilder(
-            future: getLessonsForDay(date),
+            future: futureBuilderFuture(date),
             builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting || refreshing) {
+              // Show skeleton loader only if data isn't cached
+              final cacheKey = _getCacheKey(date);
+              final hasCachedData = _lessonsCache.containsKey(cacheKey);
+
+              if ((snapshot.connectionState == ConnectionState.waiting && !hasCachedData) || refreshing) {
                 Lesson fakeLesson = Lesson(
                   courseName: "Corso b",
                   endDateTime: DateTime.now(),
@@ -349,8 +459,22 @@ class _HomePageState extends State<HomePage> {
 
               if (snapshot.hasError) {
                 return Center(
-                  child: Text(
-                    snapshot.error.toString(),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.error_outline, size: 48),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading data',
+                        style: Theme.of(context).textTheme.titleMedium,
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        snapshot.error.toString(),
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.bodySmall,
+                      ),
+                    ],
                   ),
                 );
               }
@@ -386,6 +510,7 @@ class _HomePageState extends State<HomePage> {
               lessons = lessons.where((element) {
                 return element != null && !internalAPI.filteringCourses.contains(element.courseName ?? element.name);
               }).toList();
+
               return Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -448,7 +573,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: data.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: const EdgeInsets.only(right: 7),
+                  padding: const EdgeInsets.only(right: 7), 
                   child: FilterChip(
                     label: Text(data[index]),
                     selected: !internalAPI.filteringCourses.contains(data[index]),
@@ -476,6 +601,9 @@ class _HomePageState extends State<HomePage> {
     setState(() {
       currentDate = DateTime.now().add(Duration(days: page - currentPageValue));
       _controller.animateToDate(currentDate);
+
+      // Pre-fetch adjacent pages when user changes page
+      _prefetchAdjacentPages(page);
     });
   }
 

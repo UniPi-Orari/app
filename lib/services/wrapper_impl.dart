@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -17,7 +18,9 @@ ObjectBox objectBox = Get.find<ObjectBox>();
 Map<String, List<Lesson>> cachedLessons = {};
 late DateTime currentCachedWeek;
 
-bool cachedBeingCalled = false;
+// Use a Completer to prevent duplicate API calls
+Completer<void>? _currentCacheOperation;
+DateTime? _lastCacheRefresh;
 
 Future<List<Lesson>> getLessonsFromCache({
   required DateTime startTime,
@@ -25,11 +28,11 @@ Future<List<Lesson>> getLessonsFromCache({
   bool forceRefresh = false,
   int maxRetries = 3,
 }) async {
-  DateTime exactStartDate = DateTime(startTime.year, startTime.month, startTime.day);
-  DateTime exactEndDate = DateTime(endTime.year, endTime.month, endTime.day);
-  var box = objectBox.lessonBox;
+  final DateTime exactStartDate = DateTime(startTime.year, startTime.month, startTime.day);
+  final DateTime exactEndDate = DateTime(endTime.year, endTime.month, endTime.day);
+  final box = objectBox.lessonBox;
 
-  var cache = await box
+  final cache = await box
       .query(
         Lesson_.startDateTime.betweenDate(exactStartDate, exactEndDate),
       )
@@ -37,13 +40,15 @@ Future<List<Lesson>> getLessonsFromCache({
       .build()
       .findAsync();
 
-  if ((cache.isEmpty || forceRefresh) && maxRetries > 0) {
-    await cacheLessons();
-    return await getLessonsFromCache(
-      startTime: startTime,
-      endTime: endTime,
-      maxRetries: maxRetries - 1,
-    );
+  if (cache.isEmpty || forceRefresh) {
+    if (maxRetries > 0) {
+      await cacheLessons();
+      return await getLessonsFromCache(
+        startTime: startTime,
+        endTime: endTime,
+        maxRetries: maxRetries - 1,
+      );
+    }
   }
 
   return cache;
@@ -55,41 +60,73 @@ Future<List<Lesson>> getLessonsForWeek(
 }) async {
   assert(depth > 0);
 
-  DateTime weekStart = getFirstWeekDay(date);
-  String weekStartStr = weekStart.toIso8601String();
+  final DateTime weekStart = getFirstWeekDay(date);
+  final String weekStartStr = weekStart.toIso8601String();
 
+  // Return cached lessons if available
   if (cachedLessons.containsKey(weekStartStr)) {
     return cachedLessons[weekStartStr]!;
   }
 
+  // If no cache exists, we need to fetch more weeks
   if (cachedLessons.isEmpty) {
     depth = max(depth, 2);
   }
 
-  for (int i = 0; i < depth; i++) {
-    if (i == 0) {
-      await cacheWeekLessons(startDay: weekStart);
-      continue;
-    }
+  // Fetch the requested week first
+  await cacheWeekLessons(startDay: weekStart);
 
+  // Then fetch surrounding weeks if needed
+  for (int i = 1; i < depth; i++) {
     for (int j = 0; j < 2; j++) {
-      int multiplier = j == 0 ? -1 : 1;
-      DateTime newWeek = weekStart.add(Duration(days: 7 * multiplier));
+      final int multiplier = j == 0 ? -1 : 1;
+      final DateTime newWeek = weekStart.add(Duration(days: 7 * multiplier));
       await cacheWeekLessons(startDay: newWeek);
     }
+  }
+
+  // Check if lessons were actually cached (might be skipped due to recent refresh)
+  if (!cachedLessons.containsKey(weekStartStr)) {
+    // If not, fetch directly from database
+    final endDay = weekStart.add(const Duration(days: 6));
+    final List<Lesson> lessons = await getLessonsFromCache(
+      startTime: weekStart,
+      endTime: endDay,
+      forceRefresh: false, // Don't force refresh to avoid loops
+    );
+
+    cachedLessons[weekStartStr] = lessons;
   }
 
   return cachedLessons[weekStartStr]!;
 }
 
 Future<void> cacheWeekLessons({required DateTime startDay, DateTime? endDay}) async {
-  String dateString = startDay.toIso8601String();
+  final String dateString = startDay.toIso8601String();
+
+  // If already cached, return immediately
   if (cachedLessons.containsKey(dateString)) {
     return;
   }
 
-  endDay = endDay ?? startDay.add(const Duration(days: 6));
-  List<Lesson> lessons = await getLessonsFromCache(
+  endDay ??= startDay.add(const Duration(days: 6));
+
+  // Check if we have data in database before attempting to cache
+  final box = objectBox.lessonBox;
+  final existingCount = await box
+      .query(
+        Lesson_.startDateTime.betweenDate(startDay, endDay),
+      )
+      .build()
+      .count();
+
+  // If we don't have data and we're skipping cache refresh, fetch directly
+  if (existingCount == 0) {
+    // Force a cache refresh but only if not too recent
+    await cacheLessons();
+  }
+
+  final List<Lesson> lessons = await getLessonsFromCache(
     startTime: startDay,
     endTime: endDay,
   );
@@ -98,76 +135,123 @@ Future<void> cacheWeekLessons({required DateTime startDay, DateTime? endDay}) as
 }
 
 DateTime getFirstWeekDay(DateTime date) {
-  // gio - mer = lun
-  DateTime exactDate = DateTime(date.year, date.month, date.day);
+  final DateTime exactDate = DateTime(date.year, date.month, date.day);
   return exactDate.subtract(Duration(days: exactDate.weekday - 1));
 }
 
 Future<List<Lesson>> getLessonsForDay(DateTime day) async {
-  // get the lesson from the cache
-  DateTime exactDate = DateTime(day.year, day.month, day.day);
-  String weekStartStr = getFirstWeekDay(exactDate).toIso8601String();
+  final DateTime exactDate = DateTime(day.year, day.month, day.day);
 
+  // Get lessons for the week
   await getLessonsForWeek(day);
 
-  List<Lesson> lessons = cachedLessons[weekStartStr]!;
+  final String weekStartStr = getFirstWeekDay(exactDate).toIso8601String();
+
+  // Make sure we have the cached lessons
+  if (!cachedLessons.containsKey(weekStartStr)) {
+    // If not, fetch directly from database
+    final startWeek = getFirstWeekDay(exactDate);
+    final endWeek = startWeek.add(const Duration(days: 6));
+    final lessons = await getLessonsFromCache(
+      startTime: startWeek,
+      endTime: endWeek,
+    );
+    cachedLessons[weekStartStr] = lessons;
+  }
+
+  final List<Lesson> lessons = cachedLessons[weekStartStr]!;
   return lessons.where((lesson) => lesson.startDateTime.day == day.day).toList();
 }
 
 Future<void> cacheLessons() async {
-  if (cachedBeingCalled) {
+  // Check if we recently refreshed (within last 30 seconds)
+  if (_lastCacheRefresh != null && DateTime.now().difference(_lastCacheRefresh!) < const Duration(seconds: 30)) {
+    debugPrint("Cache was recently refreshed, skipping...");
     return;
   }
-  cachedBeingCalled = true;
 
-  List<Lesson> lessons = await getLessons();
+  // If we're already caching, wait for the existing operation to complete
+  if (_currentCacheOperation != null) {
+    debugPrint("Waiting for existing cache operation...");
+    await _currentCacheOperation!.future;
+    return;
+  }
 
-  var box = objectBox.lessonBox;
-  await box.removeAllAsync();
-  await box.putManyAsync(lessons);
-  updateHomeWidget();
+  debugPrint("Starting cacheLessons operation...");
+  _currentCacheOperation = Completer<void>();
 
-  cachedBeingCalled = false;
+  try {
+    final List<Lesson> lessons = await getLessons();
+
+    final box = objectBox.lessonBox;
+    await box.removeAllAsync();
+    await box.putManyAsync(lessons);
+
+    // Clear memory cache since we have new data
+    cachedLessons.clear();
+
+    updateHomeWidget();
+
+    _lastCacheRefresh = DateTime.now();
+    debugPrint("cacheLessons completed successfully");
+  } catch (e) {
+    debugPrint("Error in cacheLessons: $e");
+    rethrow;
+  } finally {
+    _currentCacheOperation?.complete();
+    _currentCacheOperation = null;
+  }
 }
 
 Future<List<String>> getAllCourses({int retries = 5}) async {
   if (retries <= 0) return [];
 
-  var box = objectBox.lessonBox;
-  var lessons = await box.getAllAsync();
+  final box = objectBox.lessonBox;
+  final lessons = await box.getAllAsync();
 
   if (lessons.isEmpty) {
-    cachedBeingCalled = false;
+    // Only cache if not already cached recently
     await cacheLessons();
     return await getAllCourses(retries: retries - 1);
   }
 
-  Set<String> courses = {};
-  for (var lesson in lessons) {
-    courses.add(lesson.courseName ?? lesson.name);
+  final Set<String> courses = {};
+  for (final lesson in lessons) {
+    if (lesson.courseName != null && lesson.courseName!.isNotEmpty) {
+      courses.add(lesson.courseName!);
+    } else if (lesson.name.isNotEmpty) {
+      courses.add(lesson.name);
+    }
   }
 
-  return courses.toList();
+  return courses.toList()..sort();
 }
 
 Future<void> refreshCaches() async {
-  await objectBox.lessonBox.removeAllAsync();
+  debugPrint("refreshCaches called");
+
+  // Force a refresh regardless of timestamp
+  _lastCacheRefresh = null;
+
+  // Clear all caches
   cachedLessons.clear();
+
+  // Perform a fresh cache
   await cacheLessons();
 }
 
 Future<List<Lesson>> getLessons() async {
-  debugPrint("getting lessons from api");
-  var now = DateTime.now();
-  var startYear = now.month >= 9 ? now.year : now.year - 1;
-  var endYear = now.month >= 7 ? now.year + 1 : now.year;
+  debugPrint("getLessons: Fetching from API...");
+  final now = DateTime.now();
+  final startYear = now.month >= 9 ? now.year : now.year - 1;
+  final endYear = now.month >= 7 ? now.year + 1 : now.year;
 
-  var lessons = await wrapper.fetchLessons(
+  final lessons = await wrapper.fetchLessons(
     calendarId: internalAPI.calendarId,
     startDate: DateTime(startYear, 9, 15),
     endDate: DateTime(endYear, 7, 1),
   );
 
-  debugPrint("got lessons from api ${lessons.length}");
-  return [for (var lesson in lessons) Lesson.fromJsonData(lesson)];
+  debugPrint("getLessons: Got ${lessons.length} lessons from API");
+  return [for (final lesson in lessons) Lesson.fromJsonData(lesson)];
 }
