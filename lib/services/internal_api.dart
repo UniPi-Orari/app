@@ -16,7 +16,7 @@ class InternalAPI {
 
   bool get isDarkMode => prefs.getBool('isDarkMode') ?? true;
   bool get isDynamicTheme => prefs.getBool('isDynamicTheme') ?? false;
-  String get calendarId => prefs.getString('calendarId') ?? '6319d930e209821793111b45';
+  String get calendarId => prefs.getString('calendarId') ?? '6319d978e209821793111b55';
   String get clientId => prefs.getString('clientId') ?? '';
   List<String> get filteringCourses => prefs.getStringList('filteringCourses') ?? [];
 
