@@ -31,8 +31,6 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
-//import androidx.glance.preview.ExperimentalGlancePreviewApi
-//import androidx.glance.preview.Preview
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
@@ -41,6 +39,8 @@ import it.unipiorario.app.MainActivity
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.WorkManager
 
 class HomeWidget : GlanceAppWidget() {
 
@@ -52,55 +52,6 @@ class HomeWidget : GlanceAppWidget() {
             ContentWrapper(currentState())
         }
     }
-
-//    @OptIn(ExperimentalGlancePreviewApi::class)
-//    @Preview
-//    @Composable
-//    fun LessonsViewPreview() {
-//        val jsonString = """{
-//      "2025-02-01": [
-//        {
-//          "name": "ANALISI MATEMATICA",
-//          "startDateTime": "2025-02-04T14:00:00.000+0100",
-//          "endDateTime": "2025-02-04T16:00:00.000+0100",
-//          "courseName": "CORSO C",
-//          "roomName": "Fib D3"
-//        },
-//        {
-//          "name": "ANALISI MATEMATICA",
-//          "startDateTime": "2025-02-04T14:00:00.000+0100",
-//          "endDateTime": "2025-02-04T16:00:00.000+0100",
-//          "courseName": "CORSO B",
-//          "roomName": "Fib D2"
-//        }
-//      ],
-//      "2025-02-05": [
-//        {
-//          "name": "PROGRAMMAZIONE E ALGORITMICA",
-//          "startDateTime": "2025-02-05T09:00:00.000+0100",
-//          "endDateTime": "2025-02-05T11:00:00.000+0100",
-//          "courseName": "CORSO A",
-//          "roomName": "Fib D5"
-//        },
-//        {
-//          "name": "PROGRAMMAZIONE E ALGORITMICA",
-//          "startDateTime": "2025-02-05T09:00:00.000+0100",
-//          "endDateTime": "2025-02-05T11:00:00.000+0100",
-//          "courseName": "CORSO B",
-//          "roomName": "Fib D2"
-//        }
-//      ]
-//    }"""
-//        val parsedData = parseSchedule(jsonString)
-//        LessonsView(parsedData)
-//    }
-//
-//    @OptIn(ExperimentalGlancePreviewApi::class)
-//    @Preview(300, 300)
-//    @Composable
-//    fun EmptyViewPreview() {
-//        EmptyView()
-//    }
 
     @Composable
     fun ContentWrapper(currentState: HomeWidgetGlanceState) {
@@ -299,4 +250,40 @@ class HomeWidget : GlanceAppWidget() {
 
 class HomeWidgetReceiver : HomeWidgetGlanceWidgetReceiver<HomeWidget>() {
     override val glanceAppWidget = HomeWidget()
+
+    override fun onEnabled(context: Context) {
+        super.onEnabled(context)
+        // Schedule periodic updates when the widget is first added
+        schedulePeriodicUpdates(context)
+    }
+
+    override fun onUpdate(
+        context: Context,
+        appWidgetManager: android.appwidget.AppWidgetManager,
+        appWidgetIds: IntArray
+    ) {
+        super.onUpdate(context, appWidgetManager, appWidgetIds)
+        // Ensure periodic updates are scheduled on every update
+        schedulePeriodicUpdates(context)
+    }
+
+    override fun onDisabled(context: Context) {
+        super.onDisabled(context)
+        // Cancel periodic updates when the last widget is removed
+        cancelPeriodicUpdates(context)
+    }
+
+    private fun schedulePeriodicUpdates(context: Context) {
+        WorkManager.getInstance(context).enqueueUniquePeriodicWork(
+            WidgetUpdateWorker.WORK_NAME,
+            ExistingPeriodicWorkPolicy.KEEP,
+            WidgetUpdateWorker.createWorkRequest()
+        )
+        Log.d("HomeWidgetReceiver", "Scheduled periodic widget updates")
+    }
+
+    private fun cancelPeriodicUpdates(context: Context) {
+        WorkManager.getInstance(context).cancelUniqueWork(WidgetUpdateWorker.WORK_NAME)
+        Log.d("HomeWidgetReceiver", "Cancelled periodic widget updates")
+    }
 }

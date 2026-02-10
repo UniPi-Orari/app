@@ -1,6 +1,7 @@
 package it.unipiorario.app.glance
 
 import org.json.JSONObject
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
@@ -22,8 +23,15 @@ fun parseSchedule(jsonString: String): List<DaySchedule> {
     val scheduleMap = mutableListOf<DaySchedule>()
     val jsonObject = JSONObject(jsonString)
     val dateFormat = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+    val today = LocalDate.now()
 
     for (date in jsonObject.keys()) {
+        // only show today onwards dates
+        val dateObj = LocalDate.parse(date)
+        if (dateObj.isBefore(today)) {
+            continue
+        }
+        
         val lessonsJsonArray = jsonObject.getJSONArray(date)
         val lessonsList = mutableListOf<Lesson>()
 

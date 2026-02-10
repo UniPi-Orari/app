@@ -7,6 +7,7 @@ plugins {
 
 dependencies {
     implementation 'androidx.glance:glance-appwidget:1.1.1'
+    implementation 'androidx.work:work-runtime-ktx:2.9.0'
 
     debugImplementation 'androidx.compose.ui:ui-tooling-preview-android:1.7.7'
     debugImplementation 'androidx.compose.ui:ui-tooling:1.7.7'
