@@ -22,7 +22,7 @@ final _entities = <obx_int.ModelEntity>[
   obx_int.ModelEntity(
       id: const obx_int.IdUid(1, 1841969985360152617),
       name: 'Lesson',
-      lastPropertyId: const obx_int.IdUid(6, 498066942534562267),
+      lastPropertyId: const obx_int.IdUid(10, 7067123042724674126),
       flags: 0,
       properties: <obx_int.ModelProperty>[
         obx_int.ModelProperty(
@@ -53,6 +53,26 @@ final _entities = <obx_int.ModelEntity>[
         obx_int.ModelProperty(
             id: const obx_int.IdUid(6, 498066942534562267),
             name: 'roomName',
+            type: 9,
+            flags: 0),
+        obx_int.ModelProperty(
+            id: const obx_int.IdUid(7, 2534983719363576590),
+            name: 'isLocal',
+            type: 1,
+            flags: 0),
+        obx_int.ModelProperty(
+            id: const obx_int.IdUid(8, 5651237238066696715),
+            name: 'recurrenceRule',
+            type: 9,
+            flags: 0),
+        obx_int.ModelProperty(
+            id: const obx_int.IdUid(9, 5374024716433829465),
+            name: 'recurrenceEndDate',
+            type: 10,
+            flags: 0),
+        obx_int.ModelProperty(
+            id: const obx_int.IdUid(10, 7067123042724674126),
+            name: 'recurrenceGroupId',
             type: 9,
             flags: 0)
       ],
@@ -126,19 +146,31 @@ obx_int.ModelDefinition getObjectBoxModel() {
               ? null
               : fbb.writeString(object.courseName!);
           final roomNameOffset = fbb.writeString(object.roomName);
-          fbb.startTable(7);
+          final recurrenceRuleOffset = object.recurrenceRule == null
+              ? null
+              : fbb.writeString(object.recurrenceRule!);
+          final recurrenceGroupIdOffset = object.recurrenceGroupId == null
+              ? null
+              : fbb.writeString(object.recurrenceGroupId!);
+          fbb.startTable(11);
           fbb.addInt64(0, object.id);
           fbb.addOffset(1, nameOffset);
           fbb.addOffset(2, courseNameOffset);
           fbb.addInt64(3, object.startDateTime.millisecondsSinceEpoch);
           fbb.addInt64(4, object.endDateTime.millisecondsSinceEpoch);
           fbb.addOffset(5, roomNameOffset);
+          fbb.addBool(6, object.isLocal);
+          fbb.addOffset(7, recurrenceRuleOffset);
+          fbb.addInt64(8, object.recurrenceEndDate?.millisecondsSinceEpoch);
+          fbb.addOffset(9, recurrenceGroupIdOffset);
           fbb.finish(fbb.endTable());
           return object.id;
         },
         objectFromFB: (obx.Store store, ByteData fbData) {
           final buffer = fb.BufferContext(fbData);
           final rootOffset = buffer.derefObject(0);
+          final recurrenceEndDateValue =
+              const fb.Int64Reader().vTableGetNullable(buffer, rootOffset, 20);
           final nameParam = const fb.StringReader(asciiOptimization: true)
               .vTableGet(buffer, rootOffset, 6, '');
           final startDateTimeParam = DateTime.fromMillisecondsSinceEpoch(
@@ -149,12 +181,27 @@ obx_int.ModelDefinition getObjectBoxModel() {
               .vTableGetNullable(buffer, rootOffset, 8);
           final roomNameParam = const fb.StringReader(asciiOptimization: true)
               .vTableGet(buffer, rootOffset, 14, '');
+          final isLocalParam =
+              const fb.BoolReader().vTableGet(buffer, rootOffset, 16, false);
+          final recurrenceRuleParam =
+              const fb.StringReader(asciiOptimization: true)
+                  .vTableGetNullable(buffer, rootOffset, 18);
+          final recurrenceEndDateParam = recurrenceEndDateValue == null
+              ? null
+              : DateTime.fromMillisecondsSinceEpoch(recurrenceEndDateValue);
+          final recurrenceGroupIdParam =
+              const fb.StringReader(asciiOptimization: true)
+                  .vTableGetNullable(buffer, rootOffset, 22);
           final object = Lesson(
               name: nameParam,
               startDateTime: startDateTimeParam,
               endDateTime: endDateTimeParam,
               courseName: courseNameParam,
-              roomName: roomNameParam)
+              roomName: roomNameParam,
+              isLocal: isLocalParam,
+              recurrenceRule: recurrenceRuleParam,
+              recurrenceEndDate: recurrenceEndDateParam,
+              recurrenceGroupId: recurrenceGroupIdParam)
             ..id = const fb.Int64Reader().vTableGet(buffer, rootOffset, 4, 0);
 
           return object;
@@ -189,4 +236,20 @@ class Lesson_ {
   /// See [Lesson.roomName].
   static final roomName =
       obx.QueryStringProperty<Lesson>(_entities[0].properties[5]);
+
+  /// See [Lesson.isLocal].
+  static final isLocal =
+      obx.QueryBooleanProperty<Lesson>(_entities[0].properties[6]);
+
+  /// See [Lesson.recurrenceRule].
+  static final recurrenceRule =
+      obx.QueryStringProperty<Lesson>(_entities[0].properties[7]);
+
+  /// See [Lesson.recurrenceEndDate].
+  static final recurrenceEndDate =
+      obx.QueryDateProperty<Lesson>(_entities[0].properties[8]);
+
+  /// See [Lesson.recurrenceGroupId].
+  static final recurrenceGroupId =
+      obx.QueryStringProperty<Lesson>(_entities[0].properties[9]);
 }

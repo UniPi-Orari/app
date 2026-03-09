@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/helper/object_box.dart';
+import 'package:unipi_orario/helper/recurrence_helper.dart';
 import 'package:unipi_orario/objectbox.g.dart';
 import 'package:unipi_orario/services/internal_api.dart';
 import 'package:unipi_orario/services/widget_handler.dart';
@@ -141,6 +142,7 @@ DateTime getFirstWeekDay(DateTime date) {
 
 Future<List<Lesson>> getLessonsForDay(DateTime day) async {
   final DateTime exactDate = DateTime(day.year, day.month, day.day);
+  final DateTime dayEnd = exactDate.add(const Duration(hours: 23, minutes: 59));
 
   // Get lessons for the week
   await getLessonsForWeek(day);
@@ -159,8 +161,16 @@ Future<List<Lesson>> getLessonsForDay(DateTime day) async {
     cachedLessons[weekStartStr] = lessons;
   }
 
-  final List<Lesson> lessons = cachedLessons[weekStartStr]!;
-  return lessons.where((lesson) => lesson.startDateTime.day == day.day).toList();
+  final box = objectBox.lessonBox;
+  final localTemplates = await box.query(Lesson_.isLocal.equals(true)).build().findAsync();
+  final remoteLessons = cachedLessons[weekStartStr]!.where((l) => l.startDateTime.day == day.day && !l.isLocal).toList();
+
+  return mergeLessons(
+    remoteLessons: remoteLessons,
+    localTemplates: localTemplates,
+    rangeStart: exactDate,
+    rangeEnd: dayEnd,
+  );
 }
 
 Future<void> cacheLessons() async {
@@ -184,7 +194,7 @@ Future<void> cacheLessons() async {
     final List<Lesson> lessons = await getLessons();
 
     final box = objectBox.lessonBox;
-    await box.removeAllAsync();
+    await box.query(Lesson_.isLocal.equals(false)).build().removeAsync(); // keep local lessons
     await box.putManyAsync(lessons);
 
     // Clear memory cache since we have new data
@@ -225,6 +235,13 @@ Future<List<String>> getAllCourses({int retries = 5}) async {
   }
 
   return courses.toList()..sort();
+}
+
+void invalidateLocalCache(List<DateTime> dates) {
+  for (final date in dates) {
+    final key = getFirstWeekDay(date).toIso8601String();
+    cachedLessons.remove(key);
+  }
 }
 
 Future<void> refreshCaches() async {

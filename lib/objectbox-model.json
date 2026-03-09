@@ -5,7 +5,7 @@
   "entities": [
     {
       "id": "1:1841969985360152617",
-      "lastPropertyId": "6:498066942534562267",
+      "lastPropertyId": "10:7067123042724674126",
       "name": "Lesson",
       "properties": [
         {
@@ -37,6 +37,26 @@
         {
           "id": "6:498066942534562267",
           "name": "roomName",
+          "type": 9
+        },
+        {
+          "id": "7:2534983719363576590",
+          "name": "isLocal",
+          "type": 1
+        },
+        {
+          "id": "8:5651237238066696715",
+          "name": "recurrenceRule",
+          "type": 9
+        },
+        {
+          "id": "9:5374024716433829465",
+          "name": "recurrenceEndDate",
+          "type": 10
+        },
+        {
+          "id": "10:7067123042724674126",
+          "name": "recurrenceGroupId",
           "type": 9
         }
       ],
