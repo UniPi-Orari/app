@@ -20,14 +20,17 @@ It is designed to be simple and easy to use, with a clean and modern interface, 
     <img width=200 src="assets/readme_stuff/screenshots/4.png" />
     <img width=200 src="assets/readme_stuff/screenshots/5.png" />
     <img width=200 src="assets/readme_stuff/screenshots/6.png" />
+    <img width=200 src="assets/readme_stuff/screenshots/7.png" />
+    <img width=200 src="assets/readme_stuff/screenshots/8.png" />
 
 </details>
 
 # Features
-- ✅ Works on iOS and Android
+- ✅ Works on iOS, Android and Web!
 - 📅 Daily view
 - ❓ Filter by course
 - 📲 Native widget support
+- 🕒 Add your own events
 - 🧠 Efficiently caches/retrieves results in internal db                   
 - 🎨 Material You design (dynamic colors, themed icon on A12+)
 - 🌐 Multi-language support
@@ -41,7 +44,6 @@ It is designed to be simple and easy to use, with a clean and modern interface, 
 # Known issues
 - No clue about the timetable format of other courses, so it might not work for yours.
 - When you change theme, date will reset to today.
-- Sometimes when refreshing, data won't be fetched. Just try again.
 
 > [!IMPORTANT]
 > **How to try using your own calendar**
@@ -58,6 +60,8 @@ It is designed to be simple and easy to use, with a clean and modern interface, 
 
 # Download the app
 You can download the app from [release page](https://github.com/UniPi-Orari/app/releases/latest)
+
+**You can also use the website version [here](https://unipi-orari.github.io/app) and install it as a PWA on your device.**
 
 # Building from source
 
