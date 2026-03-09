@@ -122,6 +122,7 @@ class CreateEventPageState extends State<CreateEventPage> {
       maximumDateTime: DateTime(2100),
       currentDateTime: now,
       mode: CupertinoCalendarMode.date,
+      mainColor: Theme.of(ctx).colorScheme.primary,
     );
     if (picked != null) setState(() => date = picked);
   }
