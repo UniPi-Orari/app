@@ -5,6 +5,7 @@ import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/services/internal_api.dart';
@@ -338,21 +339,6 @@ class _HomePageState extends State<HomePage> {
       ),
     );
 
-    List<String> months = [
-      FlutterI18n.translate(context, "months.january"),
-      FlutterI18n.translate(context, "months.february"),
-      FlutterI18n.translate(context, "months.march"),
-      FlutterI18n.translate(context, "months.april"),
-      FlutterI18n.translate(context, "months.may"),
-      FlutterI18n.translate(context, "months.june"),
-      FlutterI18n.translate(context, "months.july"),
-      FlutterI18n.translate(context, "months.august"),
-      FlutterI18n.translate(context, "months.september"),
-      FlutterI18n.translate(context, "months.october"),
-      FlutterI18n.translate(context, "months.november"),
-      FlutterI18n.translate(context, "months.december"),
-    ];
-
     return EasyInfiniteDateTimeLine(
       key: timeLineKey,
       controller: _controller,
@@ -390,7 +376,7 @@ class _HomePageState extends State<HomePage> {
           child: Row(
             children: [
               Text(
-                "${months[currentDate.month - 1]} ${currentDate.year}",
+                "${DateFormat('MMMM', Localizations.localeOf(context).toString()).format(currentDate).capitalize} ${currentDate.year}",
                 style: TextStyle(
                   fontSize: Theme.of(context).textTheme.headlineSmall?.fontSize,
                   color: Theme.of(context).colorScheme.onSurface,

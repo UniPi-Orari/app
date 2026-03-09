@@ -1,5 +1,7 @@
 import 'package:cupertino_calendar_picker/cupertino_calendar_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_i18n/flutter_i18n.dart';
+import 'package:intl/intl.dart';
 import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/helper/lesson_cache.dart';
 import 'package:unipi_orario/ui/components/create_event/animated_reveal.dart';
@@ -98,17 +100,18 @@ class CreateEventPageState extends State<CreateEventPage> {
   DateTime combineDateAndTime(DateTime d, TimeOfDay t) => DateTime(d.year, d.month, d.day, t.hour, t.minute);
 
   String formatDate(DateTime dt) {
-    const months = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
-    const weekdays = ['lun', 'mar', 'mer', 'gio', 'ven', 'sab', 'dom'];
-    return '${weekdays[dt.weekday - 1]} ${dt.day} ${months[dt.month - 1]} ${dt.year}';
+    return DateFormat('EEE d MMM yyyy', Localizations.localeOf(context).toString()).format(dt);
   }
 
   String formatTime(TimeOfDay t) => '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}';
 
   String formatDateShort(DateTime dt) => '${dt.day.toString().padLeft(2, '0')}/${dt.month.toString().padLeft(2, '0')}/${dt.year}';
 
-  String weekdayLabel(int day) => ['Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab', 'Dom'][day - 1];
-
+  String weekdayLabel(int day) {
+    // Returns "Lun", "Mar", etc. based on current locale
+    final date = DateTime(2000, 1, 3 + day - 1); // Jan 3 2000 was a Monday
+    return DateFormat('EEE', Localizations.localeOf(context).toString()).format(date);
+  }
   // ─── Pickers ──────────────────────────────────────────────────────
 
   Future<void> pickDate(BuildContext ctx) async {
@@ -209,7 +212,12 @@ class CreateEventPageState extends State<CreateEventPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore nel salvataggio: $e')),
+          SnackBar(
+            content: I18nText(
+              'event.saveError',
+              child: const Text(''),
+            ),
+          ),
         );
       }
     } finally {
@@ -230,7 +238,12 @@ class CreateEventPageState extends State<CreateEventPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Errore nella cancellazione: $e')),
+          SnackBar(
+            content: I18nText(
+              'event.deleteError',
+              child: const Text(''),
+            ),
+          ),
         );
       }
     } finally {
@@ -251,14 +264,14 @@ class CreateEventPageState extends State<CreateEventPage> {
           onPressed: Navigator.of(context).pop,
           icon: const Icon(Icons.close),
         ),
-        title: Text(isEditing ? 'Modifica evento' : ''),
+        title: isEditing ? I18nText('event.editTitle', child: const Text('')) : const SizedBox.shrink(),
         actions: [
           if (isEditing)
             IconButton(
               icon: const Icon(Icons.delete_outline),
               color: colors.error,
               onPressed: isSaving ? null : delete,
-              tooltip: 'Elimina',
+              tooltip: FlutterI18n.translate(context, 'event.deleteTooltip'),
             ),
           Padding(
             padding: const EdgeInsets.only(right: 10),
@@ -270,7 +283,7 @@ class CreateEventPageState extends State<CreateEventPage> {
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Text('Salva'),
+                  : I18nText('event.save', child: const Text('')),
             ),
           ),
         ],
@@ -285,7 +298,7 @@ class CreateEventPageState extends State<CreateEventPage> {
               controller: nameController,
               style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w400),
               decoration: InputDecoration.collapsed(
-                hintText: 'Aggiungi titolo',
+                hintText: FlutterI18n.translate(context, 'event.titleHint'),
                 hintStyle: theme.textTheme.headlineSmall?.copyWith(
                   fontWeight: FontWeight.w400,
                   color: colors.onSurface.withOpacity(0.38),
@@ -338,9 +351,12 @@ class CreateEventPageState extends State<CreateEventPage> {
                   if (!timesValid)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        "L'orario di fine deve essere dopo l'inizio.",
-                        style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                      child: I18nText(
+                        'event.invalidTime',
+                        child: Text(
+                          '',
+                          style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                        ),
                       ),
                     ),
                 ],
@@ -370,9 +386,12 @@ class CreateEventPageState extends State<CreateEventPage> {
                   if (!timesValid)
                     Padding(
                       padding: const EdgeInsets.only(top: 4),
-                      child: Text(
-                        "L'orario di fine deve essere dopo l'inizio.",
-                        style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                      child: I18nText(
+                        'event.invalidTime',
+                        child: Text(
+                          '',
+                          style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                        ),
                       ),
                     ),
                 ],
@@ -394,7 +413,7 @@ class CreateEventPageState extends State<CreateEventPage> {
                 }
               }),
             ),
-            child: Text('Si ripete', style: theme.textTheme.bodyLarge),
+            child: I18nText('event.recurs', child: Text('', style: theme.textTheme.bodyLarge)),
           ),
           AnimatedReveal(
             visible: repeat,
@@ -407,9 +426,15 @@ class CreateEventPageState extends State<CreateEventPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       SegmentedButton<String>(
-                        segments: const [
-                          ButtonSegment(value: 'DAILY', label: Text('Ogni giorno')),
-                          ButtonSegment(value: 'WEEKLY', label: Text('Giorni specifici')),
+                        segments: [
+                          ButtonSegment(
+                            value: 'DAILY',
+                            label: I18nText('event.recurrenceDaily', child: const Text('')),
+                          ),
+                          ButtonSegment(
+                            value: 'WEEKLY',
+                            label: I18nText('event.recurrenceWeekly', child: const Text('')),
+                          ),
                         ],
                         selected: {recurrenceType},
                         onSelectionChanged: (Set<String> s) => setState(() => recurrenceType = s.first),
@@ -443,9 +468,12 @@ class CreateEventPageState extends State<CreateEventPage> {
                               if (selectedWeekdays.isEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 6),
-                                  child: Text(
-                                    'Seleziona almeno un giorno.',
-                                    style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                                  child: I18nText(
+                                    'event.selectAtLeastOneDay',
+                                    child: Text(
+                                      '',
+                                      style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                                    ),
                                   ),
                                 ),
                             ],
@@ -460,7 +488,9 @@ class CreateEventPageState extends State<CreateEventPage> {
                   child: Row(
                     children: [
                       TappableText(
-                        text: recurrenceEndDate != null ? 'Fino al ${formatDateShort(recurrenceEndDate!)}' : 'Nessuna data di fine',
+                        text: recurrenceEndDate != null
+                            ? '${FlutterI18n.translate(context, 'event.recurrenceUntil')} ${formatDateShort(recurrenceEndDate!)}'
+                            : FlutterI18n.translate(context, 'event.noEndDate'),
                         onTapWithContext: pickRecurrenceEndDate,
                         muted: recurrenceEndDate == null,
                       ),

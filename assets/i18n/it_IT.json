@@ -1,26 +1,27 @@
 {
-    "months": {
-        "january": "Gennaio",
-        "february": "Febbraio",
-        "march": "Marzo",
-        "april": "Aprile",
-        "may": "Maggio",
-        "june": "Giugno",
-        "july": "Luglio",
-        "august": "Agosto",
-        "september": "Settembre",
-        "october": "Ottobre",
-        "november": "Novembre",
-        "december": "Dicembre"
-    },
-    "home": {
-        "noEvents": "Nessun evento trovato per oggi"
-    },
-    "refreshDialog": {
-        "title": "Cambia id calendario",
-        "subtitle": "Quest'app è stata testata solo con il calendario di Informatica",
-        "confirm": "Salva",
-        "cancel": "Annulla",
-        "reset": "Reset"
-    }
+	"home": {
+		"noEvents": "Nessun evento trovato per oggi"
+	},
+	"refreshDialog": {
+		"title": "Cambia id calendario",
+		"subtitle": "Quest'app è stata testata solo con il calendario di Informatica",
+		"confirm": "Salva",
+		"cancel": "Annulla",
+		"reset": "Reset"
+	},
+	"event": {
+		"editTitle": "Modifica evento",
+		"save": "Salva",
+		"deleteTooltip": "Elimina",
+		"titleHint": "Aggiungi titolo",
+		"invalidTime": "L'orario di fine deve essere dopo l'inizio.",
+		"recurs": "Si ripete",
+		"recurrenceDaily": "Ogni giorno",
+		"recurrenceWeekly": "Giorni specifici",
+		"selectAtLeastOneDay": "Seleziona almeno un giorno.",
+		"noEndDate": "Nessuna data di fine",
+		"recurrenceUntil": "Fino al",
+		"saveError": "Errore nel salvataggio",
+		"deleteError": "Errore nella cancellazione"
+	}
 }
