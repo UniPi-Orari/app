@@ -1,0 +1,27 @@
+{
+	"home": {
+		"noEvents": "No events found for today"
+	},
+	"refreshDialog": {
+		"title": "Change calendar id",
+		"subtitle": "This app has been tested only with the IT calendar",
+		"confirm": "Save",
+		"cancel": "Cancel",
+		"reset": "Reset"
+	},
+	"event": {
+		"editTitle": "Edit event",
+		"save": "Save",
+		"deleteTooltip": "Delete",
+		"titleHint": "Set title",
+		"invalidTime": "End time must be after start time.",
+		"recurs": "Recurs",
+		"recurrenceDaily": "Daily",
+		"recurrenceWeekly": "Specific days",
+		"selectAtLeastOneDay": "Select at least one day.",
+		"noEndDate": "No end date",
+		"recurrenceUntil": "Until",
+		"saveError": "Error saving",
+		"deleteError": "Error deleting"
+	}
+}
