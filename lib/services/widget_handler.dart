@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/helper/app_database.dart';
+import 'package:unipi_orario/helper/recurrence_helper.dart';
 import 'package:unipi_orario/services/internal_api.dart';
 
 final InternalAPI internalAPI = Get.find<InternalAPI>();
@@ -20,8 +21,23 @@ bool serverRunning = false;
 void saveLessonsToHomeWidget() async {
   if (kIsWeb) return;
 
+  final DateTime rangeStart = DateTime.now().subtract(const Duration(days: 1));
+  final DateTime rangeEnd = rangeStart.add(const Duration(days: 60));
+
   final rows = await db.getUpcomingLessons(limit: 50);
-  List<LessonModel> lessons = rows.map((r) => r.toModel()).where((l) => !internalAPI.filteringCourses.contains(l.courseName ?? l.name)).toList();
+  final List<LessonModel> remoteLessons = rows.map((r) => r.toModel()).where((l) => !l.isLocal).toList();
+
+  final localTemplateRows = await db.getLocalTemplates();
+  final List<LessonModel> localTemplates = localTemplateRows.map((r) => r.toModel()).toList();
+
+  final List<LessonModel> merged = mergeLessons(
+    remoteLessons: remoteLessons,
+    localTemplates: localTemplates,
+    rangeStart: rangeStart,
+    rangeEnd: rangeEnd,
+  );
+
+  final List<LessonModel> lessons = merged.where((l) => !internalAPI.filteringCourses.contains(l.courseName ?? l.name)).toList();
 
   try {
     Map<String, List<LessonModel>> lessonsDict = {};
