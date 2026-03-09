@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:animated_theme_switcher/animated_theme_switcher.dart';
+import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:get/get.dart';
@@ -12,6 +13,7 @@ import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:unipi_orario/services/widget_handler.dart';
 import 'package:unipi_orario/services/wrapper_impl.dart';
 import 'package:unipi_orario/ui/components/home/event.dart';
+import 'package:unipi_orario/ui/pages/create_event.dart';
 import 'package:unipi_orario/utils/globals.dart' as globals;
 
 class HomePage extends StatefulWidget {
@@ -131,6 +133,14 @@ class _HomePageState extends State<HomePage> {
         futureBuilderFuture(date);
       }
     }
+  }
+
+  void _invalidateHomeCache(DateTime date) {
+    setState(() {
+      final key = _getCacheKey(date);
+      _lessonsCache.remove(key);
+      _futureCache.remove(key);
+    });
   }
 
   Future<void> refreshData() async {
@@ -573,7 +583,7 @@ class _HomePageState extends State<HomePage> {
               itemCount: data.length,
               itemBuilder: (context, index) {
                 return Padding(
-                  padding: const EdgeInsets.only(right: 7), 
+                  padding: const EdgeInsets.only(right: 7),
                   child: FilterChip(
                     label: Text(data[index]),
                     selected: !internalAPI.filteringCourses.contains(data[index]),
@@ -618,12 +628,38 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
+  Widget fab() {
+    return OpenContainer(
+      useRootNavigator: true,
+      onClosed: (_) => _invalidateHomeCache(currentDate),
+      closedBuilder: (context, openContainer) {
+        return FloatingActionButton(
+          heroTag: UniqueKey(),
+          onPressed: openContainer,
+          child: const Icon(Icons.add),
+        );
+      },
+      openBuilder: (context, closedContainer) {
+        return const CreateEventPage();
+      },
+      closedShape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(
+          Radius.circular(17),
+        ),
+      ),
+      openColor: Theme.of(context).colorScheme.primaryContainer,
+      closedColor: Theme.of(context).colorScheme.primaryContainer,
+      middleColor: Theme.of(context).colorScheme.primaryContainer,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ThemeSwitchingArea(
       child: Scaffold(
         appBar: appBar(),
         body: body(),
+        floatingActionButton: fab(),
       ),
     );
   }

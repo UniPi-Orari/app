@@ -13,8 +13,6 @@ Future<void> saveLocalLesson({
   required DateTime endDateTime,
   String roomName = '',
   String? courseName,
-  String? notes,
-  String? location,
   String? recurrenceRule,
   DateTime? recurrenceEndDate,
 }) async {
