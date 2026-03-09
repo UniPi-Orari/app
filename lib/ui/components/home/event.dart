@@ -30,7 +30,7 @@ class EventState extends State<Event> {
         ),
         leading: CircleAvatar(
           child: Text(
-            widget.lesson.roomName.replaceAll("Fib ", ""),
+            widget.lesson.roomName.replaceAll("Fib ", "").replaceAll("-Lab", ""),
           ),
         ),
         trailing: Column(
