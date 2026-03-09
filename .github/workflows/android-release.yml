@@ -58,7 +58,12 @@ jobs:
 
       - run: flutter clean
       - run: flutter pub get
-      - run: flutter build apk
+
+      - name: Build APK
+        run: flutter build apk
+
+      - name: Build Web (PWA, offline-capable)
+        run: flutter build web --release --no-web-resources-cdn --base-href /${{ github.event.repository.name }}/
 
       - name: Create a Release APK
         uses: marvinpinto/action-automatic-releases@latest
@@ -69,3 +74,10 @@ jobs:
           prerelease: false
           files: |
             build/app/outputs/apk/release/app-release.apk
+
+      - name: Deploy Web to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: build/web
+          publish_branch: gh-pages
