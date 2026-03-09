@@ -1,0 +1,85 @@
+:root {
+	--splash-bg: #f7f9ff;
+	--splash-accent: #29638a;
+	--splash-surface: #e7f0fb;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--splash-bg: #101417;
+		--splash-accent: #97ccf8;
+		--splash-surface: #232c34;
+	}
+}
+
+body,
+html {
+	height: 100%;
+	width: 100%;
+	margin: 0;
+}
+
+body {
+	display: flex;
+	justify-content: center;
+	align-items: center;
+	min-height: 100%;
+	background: var(--splash-bg);
+	flex-direction: column;
+}
+
+.progress {
+	background: var(--splash-surface);
+	justify-content: flex-start;
+	border-radius: 100px;
+	align-items: center;
+	position: relative;
+	padding: 0 5px;
+	display: flex;
+	height: 25px;
+	width: 70%;
+	transition: opacity 0.25s ease-out;
+}
+
+.progress-value {
+	transition: width 0.5s;
+	box-shadow: 0 10px 40px -10px var(--splash-accent);
+	border-radius: 100px;
+	background: var(--splash-accent);
+	height: 20px;
+	width: 0;
+	animation: initialLoad 0.6s ease forwards;
+}
+
+.progress-text {
+	color: var(--splash-accent);
+	transition: opacity 0.25s ease-out;
+	font-size: 5em;
+	margin: 0 0 20px 0;
+}
+
+.fade-in {
+	opacity: 0;
+	animation: fadeIn 1s ease-in-out forwards;
+}
+
+@keyframes initialLoad {
+	from {
+		width: 0;
+	}
+	to {
+		width: 25%;
+	}
+}
+
+@keyframes fadeIn {
+	0% {
+		opacity: 0;
+	}
+	60% {
+		opacity: 0;
+	}
+	100% {
+		opacity: 1;
+	}
+}
