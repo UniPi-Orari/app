@@ -490,6 +490,9 @@ class _HomePageState extends State<HomePage> {
               }
 
               List<LessonModel?> lessons = snapshot.data ?? [];
+              lessons = lessons.where((element) {
+                return element != null && !internalAPI.filteringCourses.contains(element.courseName ?? element.name);
+              }).toList();
 
               if (lessons.isEmpty) {
                 return Center(
@@ -516,10 +519,6 @@ class _HomePageState extends State<HomePage> {
                   ),
                 );
               }
-
-              lessons = lessons.where((element) {
-                return element != null && !internalAPI.filteringCourses.contains(element.courseName ?? element.name);
-              }).toList();
 
               return Padding(
                 padding: const EdgeInsets.symmetric(
