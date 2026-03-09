@@ -8,7 +8,7 @@ import 'package:unipi_orario/ui/components/create_event/tappable_text.dart';
 
 class CreateEventPage extends StatefulWidget {
   const CreateEventPage({super.key, this.lesson});
-  final Lesson? lesson;
+  final LessonModel? lesson;
 
   @override
   State<CreateEventPage> createState() => CreateEventPageState();
@@ -30,6 +30,7 @@ class CreateEventPageState extends State<CreateEventPage> {
   String recurrenceType = 'DAILY';
   final Set<int> selectedWeekdays = {};
   DateTime? recurrenceEndDate;
+  DateTime recurringStartDate = DateTime.now();
   TimeOfDay recurringStartTime = TimeOfDay.now();
   TimeOfDay recurringEndTime = TimeOfDay(
     hour: (TimeOfDay.now().hour + 1) % 24,
@@ -50,6 +51,7 @@ class CreateEventPageState extends State<CreateEventPage> {
 
     if (l.isRecurring) {
       repeat = true;
+      recurringStartDate = l.startDateTime;
       recurringStartTime = TimeOfDay.fromDateTime(l.startDateTime);
       recurringEndTime = TimeOfDay.fromDateTime(l.endDateTime);
       recurrenceEndDate = l.recurrenceEndDate;
@@ -178,9 +180,8 @@ class CreateEventPageState extends State<CreateEventPage> {
       final DateTime endDT;
 
       if (repeat) {
-        final anchor = DateTime.now();
-        startDT = combineDateAndTime(anchor, recurringStartTime);
-        endDT = combineDateAndTime(anchor, recurringEndTime);
+        startDT = combineDateAndTime(recurringStartDate, recurringStartTime);
+        endDT = combineDateAndTime(recurringStartDate, recurringEndTime);
       } else {
         startDT = combineDateAndTime(date, startTime);
         endDT = combineDateAndTime(date, endTime);
@@ -191,7 +192,7 @@ class CreateEventPageState extends State<CreateEventPage> {
         if (old.isRecurring) {
           await deleteLocalLessonSeries(old.recurrenceGroupId!);
         } else {
-          await deleteLocalLesson(old.id);
+          await deleteLocalLesson(old.id!);
         }
       }
 
@@ -222,7 +223,7 @@ class CreateEventPageState extends State<CreateEventPage> {
       if (l.isRecurring) {
         await deleteLocalLessonSeries(l.recurrenceGroupId!);
       } else {
-        await deleteLocalLesson(l.id);
+        await deleteLocalLesson(l.id!);
       }
       if (mounted) Navigator.of(context).pop();
     } catch (e) {

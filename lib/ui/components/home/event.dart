@@ -4,7 +4,7 @@ import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/ui/pages/create_event.dart';
 
 class Event extends StatefulWidget {
-  final Lesson lesson;
+  final LessonModel lesson;
   final VoidCallback? onEdited;
 
   const Event({

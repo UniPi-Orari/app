@@ -1,41 +1,33 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:home_widget/home_widget.dart';
 import 'package:unipi_orario/entities/lesson.dart';
-import 'package:unipi_orario/helper/object_box.dart';
-import 'package:unipi_orario/objectbox.g.dart';
+import 'package:unipi_orario/helper/app_database.dart';
 import 'package:unipi_orario/services/internal_api.dart';
 
 final InternalAPI internalAPI = Get.find<InternalAPI>();
-final ObjectBox objectBox = Get.find<ObjectBox>();
+final AppDatabase db = Get.find<AppDatabase>();
 
 const String widgetSharedPrefsKey = "lessonWidget";
 const String widgetAndroidName = "glance.HomeWidgetReceiver";
 const String widgetIosName = "HomeWidget";
 bool serverRunning = false;
 
-void saveLessonsToHomeWidget() {
-  List<Lesson> lessons = objectBox.lessonBox
-      .query(
-        Lesson_.startDateTime.greaterThanDate(DateTime.now().subtract(const Duration(days: 1))),
-      )
-      .order(
-        Lesson_.startDateTime,
-      )
-      .build()
-      .find();
-  lessons = lessons.where((element) => !internalAPI.filteringCourses.contains(element.courseName ?? element.name)).take(50).toList();
+void saveLessonsToHomeWidget() async {
+  if (kIsWeb) return;
+
+  final rows = await db.getUpcomingLessons(limit: 50);
+  List<LessonModel> lessons = rows.map((r) => r.toModel()).where((l) => !internalAPI.filteringCourses.contains(l.courseName ?? l.name)).toList();
 
   try {
-    Map<String, List<Lesson>> lessonsDict = {};
-    for (Lesson? lesson in lessons) {
-      String key = lesson!.startDateTime.toIso8601String().split("T")[0];
-
-      if (!lessonsDict.containsKey(key)) lessonsDict[key] = [];
-      lessonsDict[key]!.add(lesson);
+    Map<String, List<LessonModel>> lessonsDict = {};
+    for (final lesson in lessons) {
+      final key = lesson.startDateTime.toIso8601String().split("T")[0];
+      lessonsDict.putIfAbsent(key, () => []).add(lesson);
     }
 
     var lessonJson = jsonEncode(lessonsDict);
@@ -68,6 +60,8 @@ void setUpWebServer(String jsonData) async {
 }
 
 void updateHomeWidget() async {
+  if (kIsWeb) return;
+
   var widgetList = await HomeWidget.getInstalledWidgets();
   if (widgetList.isEmpty) return;
   debugPrint(widgetList.toString());

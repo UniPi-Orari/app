@@ -7,7 +7,6 @@ import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:get/get.dart';
 import 'package:skeletonizer/skeletonizer.dart';
 import 'package:unipi_orario/entities/lesson.dart';
-import 'package:unipi_orario/helper/object_box.dart';
 import 'package:unipi_orario/services/internal_api.dart';
 import 'package:easy_date_timeline/easy_date_timeline.dart';
 import 'package:unipi_orario/services/widget_handler.dart';
@@ -27,7 +26,6 @@ class _HomePageState extends State<HomePage> {
   GlobalKey timeLineKey = GlobalKey();
 
   InternalAPI internalAPI = Get.find<InternalAPI>();
-  ObjectBox objectBox = Get.find<ObjectBox>();
 
   final EasyInfiniteDateTimelineController _controller = EasyInfiniteDateTimelineController();
   DateTime currentDate = DateTime.now();
@@ -39,8 +37,8 @@ class _HomePageState extends State<HomePage> {
   bool refreshing = false;
 
   // Caching implementation
-  final Map<String, List<Lesson>> _lessonsCache = {};
-  final Map<String, Future<List<Lesson>>> _futureCache = {};
+  final Map<String, List<LessonModel>> _lessonsCache = {};
+  final Map<String, Future<List<LessonModel>>> _futureCache = {};
 
   @override
   void initState() {
@@ -70,7 +68,7 @@ class _HomePageState extends State<HomePage> {
     return '${normalized.year}-${normalized.month}-${normalized.day}';
   }
 
-  Future<List<Lesson>> futureBuilderFuture(DateTime date) async {
+  Future<List<LessonModel>> futureBuilderFuture(DateTime date) async {
     final cacheKey = _getCacheKey(date);
 
     // Return cached result if available
@@ -90,7 +88,7 @@ class _HomePageState extends State<HomePage> {
     return future;
   }
 
-  Future<List<Lesson>> _fetchAndCacheLessons(DateTime date, String cacheKey) async {
+  Future<List<LessonModel>> _fetchAndCacheLessons(DateTime date, String cacheKey) async {
     try {
       final lessons = await getLessonsForDay(date);
 
@@ -135,8 +133,11 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _invalidateHomeCache() {
+  void _invalidateHomeCache(DateTime date) {
     setState(() {
+      // Clear all cached data — a recurring event can affect any day,
+      // and a single-day event change still needs the future cache cleared
+      // so FutureBuilder re-runs the fetch instead of returning stale data.
       _lessonsCache.clear();
       _futureCache.clear();
     });
@@ -439,14 +440,14 @@ class _HomePageState extends State<HomePage> {
               final hasCachedData = _lessonsCache.containsKey(cacheKey);
 
               if ((snapshot.connectionState == ConnectionState.waiting && !hasCachedData) || refreshing) {
-                Lesson fakeLesson = Lesson(
+                LessonModel fakeLesson = LessonModel(
                   courseName: "Corso b",
                   endDateTime: DateTime.now(),
                   startDateTime: DateTime.now(),
                   name: "Neanche",
                   roomName: "D2",
                 );
-                List<Lesson> lessons = [for (int i = 0; i < 2; i++) fakeLesson];
+                List<LessonModel> lessons = [for (int i = 0; i < 2; i++) fakeLesson];
 
                 return Skeletonizer(
                   child: Padding(
@@ -488,7 +489,7 @@ class _HomePageState extends State<HomePage> {
                 );
               }
 
-              List<Lesson?> lessons = snapshot.data ?? [];
+              List<LessonModel?> lessons = snapshot.data ?? [];
 
               if (lessons.isEmpty) {
                 return Center(
@@ -530,7 +531,7 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (context, index) {
                     return Event(
                       lesson: lessons[index]!,
-                      onEdited: _invalidateHomeCache,
+                      onEdited: () => _invalidateHomeCache(date),
                     );
                   },
                 ),
@@ -631,7 +632,7 @@ class _HomePageState extends State<HomePage> {
   Widget fab() {
     return OpenContainer(
       useRootNavigator: true,
-      onClosed: (_) => _invalidateHomeCache(),
+      onClosed: (_) => _invalidateHomeCache(currentDate),
       closedBuilder: (context, openContainer) {
         return FloatingActionButton(
           heroTag: UniqueKey(),

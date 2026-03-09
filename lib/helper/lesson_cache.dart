@@ -1,7 +1,6 @@
-import 'package:unipi_orario/objectbox.g.dart';
 import 'package:uuid/uuid.dart';
 import 'package:unipi_orario/entities/lesson.dart';
-import 'package:unipi_orario/helper/object_box.dart';
+import 'package:unipi_orario/helper/app_database.dart';
 import 'package:unipi_orario/services/wrapper_impl.dart';
 import 'package:get/get.dart';
 
@@ -16,10 +15,10 @@ Future<void> saveLocalLesson({
   String? recurrenceRule,
   DateTime? recurrenceEndDate,
 }) async {
-  final ObjectBox objectBox = Get.find<ObjectBox>();
+  final AppDatabase db = Get.find<AppDatabase>();
   final bool isRecurring = recurrenceRule != null && recurrenceRule != 'NONE';
 
-  final lesson = Lesson(
+  final lesson = LessonModel(
     name: name,
     startDateTime: startDateTime,
     endDateTime: endDateTime,
@@ -31,7 +30,7 @@ Future<void> saveLocalLesson({
     recurrenceGroupId: isRecurring ? _uuid.v4() : null,
   );
 
-  await objectBox.lessonBox.putAsync(lesson);
+  await db.insertLesson(lesson.toCompanion());
 
   if (isRecurring) {
     cachedLessons.clear();
@@ -41,17 +40,19 @@ Future<void> saveLocalLesson({
 }
 
 Future<void> deleteLocalLesson(int id) async {
-  final ObjectBox objectBox = Get.find<ObjectBox>();
-  final lesson = objectBox.lessonBox.get(id);
-  objectBox.lessonBox.remove(id);
+  final AppDatabase db = Get.find<AppDatabase>();
+  final all = await db.getAllLessons();
+  final lesson = all.where((l) => l.id == id).firstOrNull;
+
+  await db.deleteLessonById(id);
+
   if (lesson != null) {
     invalidateLocalCache([lesson.startDateTime]);
   }
 }
 
 Future<void> deleteLocalLessonSeries(String groupId) async {
-  final ObjectBox objectBox = Get.find<ObjectBox>();
-  final box = objectBox.lessonBox;
-  await box.query(Lesson_.recurrenceGroupId.equals(groupId)).build().removeAsync();
+  final AppDatabase db = Get.find<AppDatabase>();
+  await db.deleteLessonSeries(groupId);
   cachedLessons.clear();
 }

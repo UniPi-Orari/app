@@ -1,20 +1,14 @@
-import 'package:objectbox/objectbox.dart';
 import 'package:unipi_orario_wrapper/unipi_orario_wrapper.dart';
 
-@Entity()
-class Lesson {
-  @Id()
-  int id = 0;
+class LessonModel {
+  final int? id; // nullable — Drift assigns it on insert
 
   final String name;
   final String? courseName;
   final String roomName;
   final bool isLocal;
 
-  @Property(type: PropertyType.date)
   final DateTime startDateTime;
-
-  @Property(type: PropertyType.date)
   final DateTime endDateTime;
 
   /// "NONE" for one-off local events
@@ -22,13 +16,13 @@ class Lesson {
   /// "WEEKLY:1,3,5" for specific weekdays (1=Mon, 7=Sun)
   final String? recurrenceRule;
 
-  @Property(type: PropertyType.date)
   final DateTime? recurrenceEndDate;
 
   /// Shared UUID across all instances of a recurring series
   final String? recurrenceGroupId;
 
-  Lesson({
+  const LessonModel({
+    this.id,
     required this.name,
     required this.startDateTime,
     required this.endDateTime,
@@ -42,10 +36,10 @@ class Lesson {
 
   bool get isRecurring => recurrenceRule != null && recurrenceRule != 'NONE';
 
-  factory Lesson.fromJsonData(Map<String, dynamic> json) {
+  factory LessonModel.fromJsonData(Map<String, dynamic> json) {
     final parsedDates = Utils.parseLessonDates(json);
 
-    return Lesson(
+    return LessonModel(
       name: json['nome'],
       startDateTime: parsedDates[0],
       endDateTime: parsedDates[1],
@@ -55,8 +49,8 @@ class Lesson {
   }
 
   // ----- for jsonEncode and jsonDecode
-  factory Lesson.fromJson(Map<String, dynamic> json) {
-    return Lesson(
+  factory LessonModel.fromJson(Map<String, dynamic> json) {
+    return LessonModel(
       name: json['name'],
       startDateTime: DateTime.parse(json['startDateTime']),
       endDateTime: DateTime.parse(json['endDateTime']),
@@ -84,7 +78,7 @@ class Lesson {
   }
   // ----- for jsonEncode and jsonDecode
 
-  Lesson copyWithDate(DateTime date) {
+  LessonModel copyWithDate(DateTime date) {
     final duration = endDateTime.difference(startDateTime);
     final newStart = DateTime(
       date.year,
@@ -93,7 +87,8 @@ class Lesson {
       startDateTime.hour,
       startDateTime.minute,
     );
-    return Lesson(
+    return LessonModel(
+      id: id,
       name: name,
       startDateTime: newStart,
       endDateTime: newStart.add(duration),
@@ -108,7 +103,7 @@ class Lesson {
 
   @override
   String toString() {
-    return 'Lesson{name: $name, startDateTime: $startDateTime, endDateTime: $endDateTime, '
+    return 'LessonModel{name: $name, startDateTime: $startDateTime, endDateTime: $endDateTime, '
         'courseName: $courseName, roomName: $roomName, isLocal: $isLocal, '
         'recurrenceRule: $recurrenceRule, recurrenceGroupId: $recurrenceGroupId}';
   }

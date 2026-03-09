@@ -1,7 +1,7 @@
 import 'package:unipi_orario/entities/lesson.dart';
 
-List<Lesson> expandRecurringLesson({
-  required Lesson template,
+List<LessonModel> expandRecurringLesson({
+  required LessonModel template,
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
@@ -13,7 +13,7 @@ List<Lesson> expandRecurringLesson({
   final clampedEnd = effectiveEnd.isBefore(rangeEnd) ? effectiveEnd : rangeEnd;
 
   final List<int> activeDays = _parseActiveDays(rule);
-  final List<Lesson> instances = [];
+  final List<LessonModel> instances = [];
 
   DateTime cursor = DateTime(rangeStart.year, rangeStart.month, rangeStart.day);
   final clampedEndDate = DateTime(clampedEnd.year, clampedEnd.month, clampedEnd.day);
@@ -37,13 +37,13 @@ List<Lesson> expandRecurringLesson({
   return instances;
 }
 
-List<Lesson> mergeLessons({
-  required List<Lesson> remoteLessons,
-  required List<Lesson> localTemplates,
+List<LessonModel> mergeLessons({
+  required List<LessonModel> remoteLessons,
+  required List<LessonModel> localTemplates,
   required DateTime rangeStart,
   required DateTime rangeEnd,
 }) {
-  final List<Lesson> allLessons = [...remoteLessons];
+  final List<LessonModel> allLessons = [...remoteLessons];
 
   for (final template in localTemplates) {
     if (template.isRecurring) {
