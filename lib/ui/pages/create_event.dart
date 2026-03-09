@@ -1,12 +1,14 @@
 import 'package:cupertino_calendar_picker/cupertino_calendar_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:unipi_orario/entities/lesson.dart';
 import 'package:unipi_orario/helper/lesson_cache.dart';
 import 'package:unipi_orario/ui/components/create_event/animated_reveal.dart';
 import 'package:unipi_orario/ui/components/create_event/icon_row.dart';
 import 'package:unipi_orario/ui/components/create_event/tappable_text.dart';
 
 class CreateEventPage extends StatefulWidget {
-  const CreateEventPage({super.key});
+  const CreateEventPage({super.key, this.lesson});
+  final Lesson? lesson;
 
   @override
   State<CreateEventPage> createState() => CreateEventPageState();
@@ -35,6 +37,37 @@ class CreateEventPageState extends State<CreateEventPage> {
   );
 
   bool isSaving = false;
+
+  bool get isEditing => widget.lesson != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final l = widget.lesson;
+    if (l == null) return;
+
+    nameController.text = l.name;
+
+    if (l.isRecurring) {
+      repeat = true;
+      recurringStartTime = TimeOfDay.fromDateTime(l.startDateTime);
+      recurringEndTime = TimeOfDay.fromDateTime(l.endDateTime);
+      recurrenceEndDate = l.recurrenceEndDate;
+
+      final rule = l.recurrenceRule!;
+      if (rule == 'DAILY') {
+        recurrenceType = 'DAILY';
+      } else if (rule.startsWith('WEEKLY:')) {
+        recurrenceType = 'WEEKLY';
+        final days = rule.split(':')[1].split(',').map(int.parse);
+        selectedWeekdays.addAll(days);
+      }
+    } else {
+      date = l.startDateTime;
+      startTime = TimeOfDay.fromDateTime(l.startDateTime);
+      endTime = TimeOfDay.fromDateTime(l.endDateTime);
+    }
+  }
 
   // ─── Validation ───────────────────────────────────────────────────
 
@@ -153,6 +186,15 @@ class CreateEventPageState extends State<CreateEventPage> {
         endDT = combineDateAndTime(date, endTime);
       }
 
+      if (isEditing) {
+        final old = widget.lesson!;
+        if (old.isRecurring) {
+          await deleteLocalLessonSeries(old.recurrenceGroupId!);
+        } else {
+          await deleteLocalLesson(old.id);
+        }
+      }
+
       await saveLocalLesson(
         name: nameController.text.trim(),
         startDateTime: startDT,
@@ -173,6 +215,27 @@ class CreateEventPageState extends State<CreateEventPage> {
     }
   }
 
+  Future<void> delete() async {
+    final l = widget.lesson!;
+    setState(() => isSaving = true);
+    try {
+      if (l.isRecurring) {
+        await deleteLocalLessonSeries(l.recurrenceGroupId!);
+      } else {
+        await deleteLocalLesson(l.id);
+      }
+      if (mounted) Navigator.of(context).pop();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Errore nella cancellazione: $e')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => isSaving = false);
+    }
+  }
+
   // ─── Build ────────────────────────────────────────────────────────
 
   @override
@@ -186,7 +249,15 @@ class CreateEventPageState extends State<CreateEventPage> {
           onPressed: Navigator.of(context).pop,
           icon: const Icon(Icons.close),
         ),
+        title: Text(isEditing ? 'Modifica evento' : ''),
         actions: [
+          if (isEditing)
+            IconButton(
+              icon: const Icon(Icons.delete_outline),
+              color: colors.error,
+              onPressed: isSaving ? null : delete,
+              tooltip: 'Elimina',
+            ),
           Padding(
             padding: const EdgeInsets.only(right: 10),
             child: FilledButton(

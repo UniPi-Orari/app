@@ -135,11 +135,10 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  void _invalidateHomeCache(DateTime date) {
+  void _invalidateHomeCache() {
     setState(() {
-      final key = _getCacheKey(date);
-      _lessonsCache.remove(key);
-      _futureCache.remove(key);
+      _lessonsCache.clear();
+      _futureCache.clear();
     });
   }
 
@@ -531,6 +530,7 @@ class _HomePageState extends State<HomePage> {
                   itemBuilder: (context, index) {
                     return Event(
                       lesson: lessons[index]!,
+                      onEdited: _invalidateHomeCache,
                     );
                   },
                 ),
@@ -631,7 +631,7 @@ class _HomePageState extends State<HomePage> {
   Widget fab() {
     return OpenContainer(
       useRootNavigator: true,
-      onClosed: (_) => _invalidateHomeCache(currentDate),
+      onClosed: (_) => _invalidateHomeCache(),
       closedBuilder: (context, openContainer) {
         return FloatingActionButton(
           heroTag: UniqueKey(),
