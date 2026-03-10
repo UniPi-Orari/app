@@ -1,16 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:unipi_orario/entities/lesson.dart';
-import 'package:unipi_orario/ui/pages/create_event.dart';
 
 class Event extends StatefulWidget {
   final LessonModel lesson;
   final VoidCallback? onEdited;
+  final void Function(LessonModel)? onEdit;
 
   const Event({
     super.key,
     required this.lesson,
     this.onEdited,
+    this.onEdit,
   });
 
   @override
@@ -18,13 +19,8 @@ class Event extends StatefulWidget {
 }
 
 class EventState extends State<Event> {
-  Future<void> _openEdit() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => CreateEventPage(lesson: widget.lesson),
-      ),
-    );
-    widget.onEdited?.call();
+  void _openEdit() {
+    widget.onEdit?.call(widget.lesson);
   }
 
   @override

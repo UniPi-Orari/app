@@ -258,259 +258,291 @@ class CreateEventPageState extends State<CreateEventPage> {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
 
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          onPressed: Navigator.of(context).pop,
-          icon: const Icon(Icons.close),
-        ),
-        title: isEditing ? I18nText('event.editTitle', child: const Text('')) : const SizedBox.shrink(),
-        actions: [
-          if (isEditing)
-            IconButton(
-              icon: const Icon(Icons.delete_outline),
-              color: colors.error,
-              onPressed: isSaving ? null : delete,
-              tooltip: FlutterI18n.translate(context, 'event.deleteTooltip'),
-            ),
-          Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: FilledButton(
-              onPressed: isValid && !isSaving ? save : null,
-              child: isSaving
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : I18nText('event.save', child: const Text('')),
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Drag handle
+        Padding(
+          padding: const EdgeInsets.only(top: 12, bottom: 4),
+          child: Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: colors.onSurfaceVariant.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(2),
             ),
           ),
-        ],
-      ),
-      body: ListView(
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(72, 16, 16, 16),
-            child: TextField(
-              onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
-              autofocus: true,
-              controller: nameController,
-              style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w400),
-              decoration: InputDecoration.collapsed(
-                hintText: FlutterI18n.translate(context, 'event.titleHint'),
-                hintStyle: theme.textTheme.headlineSmall?.copyWith(
-                  fontWeight: FontWeight.w400,
-                  color: colors.onSurface.withOpacity(0.38),
+        ),
+        // Top bar: close / title / actions
+        Padding(
+          padding: const EdgeInsets.all(4),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                onPressed: Navigator.of(context).pop,
+                icon: const Icon(Icons.close),
+              ),
+              Expanded(
+                child: isEditing ? I18nText('event.editTitle', child: Text('', style: theme.textTheme.titleMedium)) : const SizedBox.shrink(),
+              ),
+              if (isEditing)
+                IconButton(
+                  icon: const Icon(Icons.delete_outline),
+                  color: colors.error,
+                  onPressed: isSaving ? null : delete,
+                  tooltip: FlutterI18n.translate(context, 'event.deleteTooltip'),
+                ),
+              Padding(
+                padding: const EdgeInsets.only(right: 10),
+                child: FilledButton(
+                  onPressed: isValid && !isSaving ? save : null,
+                  child: isSaving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : I18nText(
+                          'event.save',
+                          child: const Text(''),
+                        ),
                 ),
               ),
-              onChanged: (_) => setState(() {}),
-            ),
+            ],
           ),
-          const Divider(height: 1),
-          const SizedBox(height: 4),
-          IconRow(
-            icon: Icons.access_time_outlined,
-            child: AnimatedCrossFade(
-              duration: const Duration(milliseconds: 280),
-              sizeCurve: Curves.easeInOut,
-              firstCurve: Curves.easeOut,
-              secondCurve: Curves.easeIn,
-              crossFadeState: repeat ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-              firstChild: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      TappableText(
-                        text: formatDate(date),
-                        onTapWithContext: pickDate,
-                      ),
-                      const Spacer(),
-                      TappableText(
-                        text: formatTime(startTime),
-                        onTapWithContext: (ctx) => pickTime(ctx, isStart: true),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      TappableText(
-                        text: formatDate(date),
-                        onTapWithContext: pickDate,
-                        muted: true,
-                      ),
-                      const Spacer(),
-                      TappableText(
-                        text: formatTime(endTime),
-                        onTapWithContext: (ctx) => pickTime(ctx, isStart: false),
-                      ),
-                    ],
-                  ),
-                  if (!timesValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: I18nText(
-                        'event.invalidTime',
-                        child: Text(
-                          '',
-                          style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
-                        ),
-                      ),
+        ),
+        // Scrollable content
+        Flexible(
+          child: ListView(
+            shrinkWrap: true,
+            children: [
+              Padding(
+                padding: const EdgeInsets.fromLTRB(72, 16, 16, 16),
+                child: TextField(
+                  onTapOutside: (_) => FocusManager.instance.primaryFocus?.unfocus(),
+                  autofocus: true,
+                  controller: nameController,
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w400),
+                  decoration: InputDecoration.collapsed(
+                    hintText: FlutterI18n.translate(context, 'event.titleHint'),
+                    hintStyle: theme.textTheme.headlineSmall?.copyWith(
+                      fontWeight: FontWeight.w400,
+                      color: colors.onSurface.withOpacity(0.38),
                     ),
-                ],
-              ),
-              secondChild: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      TappableText(
-                        text: formatTime(recurringStartTime),
-                        onTapWithContext: (ctx) => pickTime(ctx, isStart: true),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        child: Text('–',
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              color: colors.onSurface.withOpacity(0.55),
-                            )),
-                      ),
-                      TappableText(
-                        text: formatTime(recurringEndTime),
-                        onTapWithContext: (ctx) => pickTime(ctx, isStart: false),
-                      ),
-                    ],
                   ),
-                  if (!timesValid)
-                    Padding(
-                      padding: const EdgeInsets.only(top: 4),
-                      child: I18nText(
-                        'event.invalidTime',
-                        child: Text(
-                          '',
-                          style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
-                        ),
-                      ),
-                    ),
-                ],
+                  onChanged: (_) => setState(() {}),
+                ),
               ),
-            ),
-          ),
-          const SizedBox(height: 4),
-          const Divider(height: 1),
-          const SizedBox(height: 4),
-          IconRow(
-            icon: Icons.repeat_outlined,
-            trailing: Switch(
-              value: repeat,
-              onChanged: (bool v) => setState(() {
-                repeat = v;
-                if (!v) {
-                  selectedWeekdays.clear();
-                  recurrenceEndDate = null;
-                }
-              }),
-            ),
-            child: I18nText('event.recurs', child: Text('', style: theme.textTheme.bodyLarge)),
-          ),
-          AnimatedReveal(
-            visible: repeat,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                IconRow(
-                  icon: Icons.tune_outlined,
-                  child: Column(
+              const Divider(height: 1),
+              const SizedBox(height: 4),
+              IconRow(
+                icon: Icons.access_time_outlined,
+                child: AnimatedCrossFade(
+                  duration: const Duration(milliseconds: 280),
+                  sizeCurve: Curves.easeInOut,
+                  firstCurve: Curves.easeOut,
+                  secondCurve: Curves.easeIn,
+                  crossFadeState: repeat ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                  firstChild: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SegmentedButton<String>(
-                        segments: [
-                          ButtonSegment(
-                            value: 'DAILY',
-                            label: I18nText('event.recurrenceDaily', child: const Text('')),
+                      Row(
+                        children: [
+                          TappableText(
+                            text: formatDate(date),
+                            onTapWithContext: pickDate,
                           ),
-                          ButtonSegment(
-                            value: 'WEEKLY',
-                            label: I18nText('event.recurrenceWeekly', child: const Text('')),
+                          const Spacer(),
+                          TappableText(
+                            text: formatTime(startTime),
+                            onTapWithContext: (ctx) => pickTime(ctx, isStart: true),
                           ),
                         ],
-                        selected: {recurrenceType},
-                        onSelectionChanged: (Set<String> s) => setState(() => recurrenceType = s.first),
                       ),
-                      AnimatedReveal(
-                        visible: recurrenceType == 'WEEKLY',
-                        child: Padding(
-                          padding: const EdgeInsets.only(top: 10),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Wrap(
-                                spacing: 6,
-                                runSpacing: 6,
-                                children: List.generate(7, (i) {
-                                  final day = i + 1;
-                                  final selected = selectedWeekdays.contains(day);
-                                  return FilterChip(
-                                    label: Text(weekdayLabel(day)),
-                                    selected: selected,
-                                    onSelected: (bool v) => setState(() {
-                                      if (v) {
-                                        selectedWeekdays.add(day);
-                                      } else {
-                                        selectedWeekdays.remove(day);
-                                      }
-                                    }),
-                                  );
-                                }),
-                              ),
-                              if (selectedWeekdays.isEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 6),
-                                  child: I18nText(
-                                    'event.selectAtLeastOneDay',
-                                    child: Text(
-                                      '',
-                                      style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
-                                    ),
-                                  ),
-                                ),
-                            ],
+                      const SizedBox(height: 2),
+                      Row(
+                        children: [
+                          TappableText(
+                            text: formatDate(date),
+                            onTapWithContext: pickDate,
+                            muted: true,
+                          ),
+                          const Spacer(),
+                          TappableText(
+                            text: formatTime(endTime),
+                            onTapWithContext: (ctx) => pickTime(ctx, isStart: false),
+                          ),
+                        ],
+                      ),
+                      if (!timesValid)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: I18nText(
+                            'event.invalidTime',
+                            child: Text(
+                              '',
+                              style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                            ),
                           ),
                         ),
-                      ),
                     ],
                   ),
-                ),
-                IconRow(
-                  icon: Icons.event_available_outlined,
-                  child: Row(
+                  secondChild: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      TappableText(
-                        text: recurrenceEndDate != null
-                            ? '${FlutterI18n.translate(context, 'event.recurrenceUntil')} ${formatDateShort(recurrenceEndDate!)}'
-                            : FlutterI18n.translate(context, 'event.noEndDate'),
-                        onTapWithContext: pickRecurrenceEndDate,
-                        muted: recurrenceEndDate == null,
+                      Row(
+                        children: [
+                          TappableText(
+                            text: formatTime(recurringStartTime),
+                            onTapWithContext: (ctx) => pickTime(ctx, isStart: true),
+                          ),
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 8),
+                            child: Text('-',
+                                style: theme.textTheme.bodyLarge?.copyWith(
+                                  color: colors.onSurface.withOpacity(0.55),
+                                )),
+                          ),
+                          TappableText(
+                            text: formatTime(recurringEndTime),
+                            onTapWithContext: (ctx) => pickTime(ctx, isStart: false),
+                          ),
+                        ],
                       ),
-                      if (recurrenceEndDate != null) ...[
-                        const SizedBox(width: 6),
-                        InkWell(
-                          onTap: () => setState(() => recurrenceEndDate = null),
-                          borderRadius: BorderRadius.circular(12),
-                          child: Icon(Icons.close, size: 16, color: colors.onSurface.withOpacity(0.5)),
+                      if (!timesValid)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: I18nText(
+                            'event.invalidTime',
+                            child: Text(
+                              '',
+                              style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                            ),
+                          ),
                         ),
-                      ],
                     ],
                   ),
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 4),
+              const Divider(height: 1),
+              const SizedBox(height: 4),
+              IconRow(
+                icon: Icons.repeat_outlined,
+                trailing: Switch(
+                  value: repeat,
+                  onChanged: (bool v) => setState(() {
+                    repeat = v;
+                    if (!v) {
+                      selectedWeekdays.clear();
+                      recurrenceEndDate = null;
+                    }
+                  }),
+                ),
+                child: I18nText('event.recurs', child: Text('', style: theme.textTheme.bodyLarge)),
+              ),
+              AnimatedReveal(
+                visible: repeat,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconRow(
+                      icon: Icons.tune_outlined,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          SegmentedButton<String>(
+                            segments: [
+                              ButtonSegment(
+                                value: 'DAILY',
+                                label: I18nText('event.recurrenceDaily', child: const Text('')),
+                              ),
+                              ButtonSegment(
+                                value: 'WEEKLY',
+                                label: I18nText('event.recurrenceWeekly', child: const Text('')),
+                              ),
+                            ],
+                            selected: {recurrenceType},
+                            onSelectionChanged: (Set<String> s) => setState(() => recurrenceType = s.first),
+                          ),
+                          AnimatedReveal(
+                            visible: recurrenceType == 'WEEKLY',
+                            child: Padding(
+                              padding: const EdgeInsets.only(top: 10),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Wrap(
+                                    spacing: 6,
+                                    runSpacing: 6,
+                                    children: List.generate(7, (i) {
+                                      final day = i + 1;
+                                      final selected = selectedWeekdays.contains(day);
+                                      return FilterChip(
+                                        label: Text(weekdayLabel(day)),
+                                        selected: selected,
+                                        visualDensity: VisualDensity.compact,
+                                        onSelected: (bool v) => setState(() {
+                                          if (v) {
+                                            selectedWeekdays.add(day);
+                                          } else {
+                                            selectedWeekdays.remove(day);
+                                          }
+                                        }),
+                                      );
+                                    }),
+                                  ),
+                                  if (selectedWeekdays.isEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 6),
+                                      child: I18nText(
+                                        'event.selectAtLeastOneDay',
+                                        child: Text(
+                                          '',
+                                          style: theme.textTheme.bodySmall?.copyWith(color: colors.error),
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    IconRow(
+                      icon: Icons.event_available_outlined,
+                      child: Row(
+                        children: [
+                          TappableText(
+                            text: recurrenceEndDate != null
+                                ? '${FlutterI18n.translate(context, 'event.recurrenceUntil')} ${formatDateShort(recurrenceEndDate!)}'
+                                : FlutterI18n.translate(context, 'event.noEndDate'),
+                            onTapWithContext: pickRecurrenceEndDate,
+                            muted: recurrenceEndDate == null,
+                          ),
+                          if (recurrenceEndDate != null) ...[
+                            const SizedBox(width: 6),
+                            InkWell(
+                              onTap: () => setState(() => recurrenceEndDate = null),
+                              borderRadius: BorderRadius.circular(12),
+                              child: Icon(Icons.close, size: 16, color: colors.onSurface.withOpacity(0.5)),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(
+                height: MediaQuery.of(context).viewInsets.bottom + 32,
+              ),
+            ],
           ),
-          const SizedBox(height: 32),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:animated_theme_switcher/animated_theme_switcher.dart';
-import 'package:animations/animations.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_i18n/flutter_i18n.dart';
 import 'package:get/get.dart';
@@ -517,6 +516,19 @@ class _HomePageState extends State<HomePage> {
                     return Event(
                       lesson: lessons[index]!,
                       onEdited: () => _invalidateHomeCache(date),
+                      onEdit: (lesson) async {
+                        await showModalBottomSheet(
+                          context: context,
+                          isScrollControlled: true,
+                          useRootNavigator: true,
+                          useSafeArea: true,
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                          ),
+                          builder: (_) => CreateEventPage(lesson: lesson),
+                        );
+                        _invalidateHomeCache(date);
+                      },
                     );
                   },
                 ),
@@ -615,27 +627,22 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget fab() {
-    return OpenContainer(
-      useRootNavigator: true,
-      onClosed: (_) => _invalidateHomeCache(currentDate),
-      closedBuilder: (context, openContainer) {
-        return FloatingActionButton(
-          heroTag: UniqueKey(),
-          onPressed: openContainer,
-          child: const Icon(Icons.add),
+    return FloatingActionButton(
+      heroTag: UniqueKey(),
+      onPressed: () async {
+        await showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          useRootNavigator: true,
+          useSafeArea: true,
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+          ),
+          builder: (_) => const CreateEventPage(),
         );
+        _invalidateHomeCache(currentDate);
       },
-      openBuilder: (context, closedContainer) {
-        return const CreateEventPage();
-      },
-      closedShape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.all(
-          Radius.circular(17),
-        ),
-      ),
-      openColor: Theme.of(context).colorScheme.primaryContainer,
-      closedColor: Theme.of(context).colorScheme.primaryContainer,
-      middleColor: Theme.of(context).colorScheme.primaryContainer,
+      child: const Icon(Icons.add),
     );
   }
 
